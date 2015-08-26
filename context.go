@@ -196,7 +196,8 @@ func (ctx *Context) SetHeader(key, val string) {
 func (ctx *Context) Abort(status int, body string) {
 	ctx.ResponseWriter.WriteHeader(status)
 	ctx.WriteString(body)
-	panic(body)
+	return
+	//fmt.Printf("%s",body)
 }
 
 func (ctx *Context) WriteString(content string) {
