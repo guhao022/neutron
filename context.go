@@ -13,6 +13,10 @@ type Context struct {
 	Request        *http.Request
 }
 
+func (ctx *Context) Debug(){
+	CLog("[INFO]  [ %s ] | < %s > | [ %s ] \n", ctx.Request.Method, ctx.Request.RequestURI, ctx.IP())
+}
+
 //==========================INTPUT--START=========================
 
 func (ctx *Context) Uri() string {
