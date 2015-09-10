@@ -6,10 +6,11 @@ import (
 	"strings"
 	"strconv"
 	"path/filepath"
+    "time"
 )
 
 type Context struct {
-	ResponseWriter http.ResponseWriter
+	Response       http.ResponseWriter
 	Request        *http.Request
 }
 
@@ -185,27 +186,51 @@ func (ctx *Context) GetFloat(key string, def ...float64) (float64, error) {
 
 //=============================INTPUT--END=========================
 
+func (ctx *Context) Cookie(key string, value ...string) string {
+    if len(value) < 1 {
+        c, e := ctx.Request.Cookie(key)
+        if e != nil {
+            return ""
+        }
+        return c.Value
+    }
+    if len(value) == 2 {
+        t := time.Now()
+        expire, _ := strconv.Atoi(value[1])
+        t = t.Add(time.Duration(expire) * time.Second)
+        cookie := &http.Cookie{
+            Name:    key,
+            Value:   value[0],
+            Path:    "/",
+            MaxAge:  expire,
+            Expires: t,
+        }
+        http.SetCookie(ctx.Response, cookie)
+        return ""
+    }
+    return ""
+}
 
 //============================OUTPUT--START============================
 
 func (ctx *Context) Redirect(status int, localurl string) {
-	ctx.ResponseWriter.Header().Set("Location", localurl)
-	ctx.ResponseWriter.WriteHeader(status)
+	ctx.Response.Header().Set("Location", localurl)
+	ctx.Response.WriteHeader(status)
 }
 
 func (ctx *Context) SetHeader(key, val string) {
-	ctx.ResponseWriter.Header().Set(key, val)
+	ctx.Response.Header().Set(key, val)
 }
 
 func (ctx *Context) Abort(status int, body string) {
-	ctx.ResponseWriter.WriteHeader(status)
+	ctx.Response.WriteHeader(status)
 	ctx.WriteString(body)
 	return
 	//fmt.Printf("%s",body)
 }
 
 func (ctx *Context) WriteString(content string) {
-	ctx.ResponseWriter.Write([]byte(content))
+	ctx.Response.Write([]byte(content))
 }
 
 func (ctx *Context) Json(i interface{}) {
@@ -213,8 +238,8 @@ func (ctx *Context) Json(i interface{}) {
 	if err != nil {
 		return
 	}
-	ctx.ResponseWriter.Header().Set("content-type", "application/json; charset=utf-8")
-	ctx.ResponseWriter.Write(out)
+	ctx.Response.Header().Set("content-type", "application/json; charset=utf-8")
+	ctx.Response.Write(out)
 }
 
 func (ctx *Context) Download(file string, filename ...string) {
@@ -229,6 +254,6 @@ func (ctx *Context) Download(file string, filename ...string) {
 	ctx.SetHeader("Expires", "0")
 	ctx.SetHeader("Cache-Control", "must-revalidate")
 	ctx.SetHeader("Pragma", "public")
-	http.ServeFile(ctx.ResponseWriter, ctx.Request, file)
+	http.ServeFile(ctx.Response, ctx.Request, file)
 }
-
+//============================OUTPUT--STOP============================
