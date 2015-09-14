@@ -7,6 +7,7 @@ import (
     "errors"
     "io"
     "crypto/md5"
+    "fmt"
 )
 
 type Lock interface {
@@ -39,7 +40,7 @@ func NewLock(lckpath, lckname, needlckfile string) (*lockfile, error) {
 
             needlckfi: needlckfile,
 
-            content: &lc,
+            content: lc,
 
         }, nil
 
@@ -56,11 +57,19 @@ func NewLock(lckpath, lckname, needlckfile string) (*lockfile, error) {
 
     bytes, err := ioutil.ReadFile(needlckfile)
 
-    fileMd5 := FileMd5(needlckfile)
+    if err != nil {
+        fmt.Printf("read file error: %s\n", err)
+        return nil, err
+    }
+
+    fileMd5, err := FileMd5(needlckfile)
 
     if err != nil {
-        panic("read file error: " + err + "\n")
+        fmt.Printf("file md5 error: %s\n", err)
+        return nil, err
     }
+
+    var lckcont = lckcontent{bytes,fileMd5}
 
     return &lockfile{
 
@@ -70,19 +79,14 @@ func NewLock(lckpath, lckname, needlckfile string) (*lockfile, error) {
 
         needlckfi: needlckfile,
 
-        content: &lckcontent{
-
-            filebytes: bytes,
-
-            md5: fileMd5,
-        },
+        content: lckcont,
 
     }, nil
 }
 
 type lckcontent struct {
-    filebytes   string
-    md5         string
+    filebytes   []byte
+    md5         []byte
 }
 
 type lockfile struct {
@@ -139,7 +143,7 @@ func (l *lockfile) Recovery() error {
     if !same {
         // 获取文件内容
         var lc lckcontent
-        content := string(lc.filebytes)
+        content := lc.filebytes
 
         // 把内容写入文件
         err = ioutil.WriteFile(l.needlckfi, content, os.ModePerm)
@@ -165,13 +169,17 @@ func (l *lockfile) checkMd5() (bool, error) {
 
     if err != nil {
         log.Printf("read lckfile error: %s\n", err)
-        return nil, err
+        return false, err
     }
 
     //然后计算需要加锁文件 MD5
-    filemd5 := FileMd5(l.needlckfi)
+    filemd5, err := FileMd5(l.needlckfi)
 
-    if lc.md5 != filemd5 {
+    if err != nil {
+        return false, err
+    }
+
+    if string(lc.md5) != string(filemd5) {
         return false, nil
     }
 
@@ -179,13 +187,13 @@ func (l *lockfile) checkMd5() (bool, error) {
 }
 
 // 获取文件 Md5 值
-func FileMd5(file string) string {
-    file, err := os.Open(file)
+func FileMd5(fi string) ([]byte, error) {
+    file, err := os.Open(fi)
     if err != nil {
         log.Printf("open file error : %s\n", err)
-        return nil
+        return nil, err
     }
     md5f := md5.New()
     io.Copy(md5f, file)
-    return string(md5f.Sum(nil))
+    return md5f.Sum(nil), nil
 }

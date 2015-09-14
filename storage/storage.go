@@ -5,6 +5,7 @@ import (
     "io/ioutil"
     "encoding/json"
     "bufio"
+    "path"
 )
 
 func New(storpath, filename string) (*Storage, error) {
@@ -34,28 +35,30 @@ type Storage struct {
 
 // 获取文件信息
 func (sto Storage) Get(value interface{}) error {
-    return read(sto.name + ".json", value)
+    var filepath = path.Join(sto.storpath, sto.name)
+    return read(filepath + ".json", value)
 }
 
 // 缓存文件
 func (sto Storage) Store(value interface{}) error {
-    return write(sto.name + ".json", value)
+    var filepath = path.Join(sto.storpath, sto.name)
+    return write(filepath + ".json", value)
 }
 
 
-func getFile(path string) (*os.File, error) {
-    f, err := os.OpenFile(path, os.O_RDWR, 0666)
+func getFile(storpath string) (*os.File, error) {
+    f, err := os.OpenFile(storpath, os.O_RDWR, 0666)
     if err != nil {
         if _, ok := err.(*os.PathError); ok {
-            return os.Create(path)
+            return os.Create(storpath)
         }
         return nil, err
     }
     return f, nil
 }
 
-func read(path string, value interface{}) error {
-    f, err := getFile(path)
+func read(storpath string, value interface{}) error {
+    f, err := getFile(storpath)
     defer f.Close()
 
     if err != nil {
@@ -65,12 +68,12 @@ func read(path string, value interface{}) error {
     return json.NewDecoder(bufio.NewReader(f)).Decode(&value)
 }
 
-func write(path string, value interface{}) error {
+func write(storpath string, value interface{}) error {
     content, err := json.Marshal(value)
 
     if err != nil {
         return err
     }
-    return ioutil.WriteFile(path, content, os.ModePerm)
+    return ioutil.WriteFile(storpath, content, os.ModePerm)
 }
 
