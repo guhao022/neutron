@@ -34,12 +34,12 @@ type Storage struct {
 
 // 获取文件信息
 func (sto Storage) Get(value interface{}) error {
-    return read(sto.name, value)
+    return read(sto.name + ".json", value)
 }
 
 // 缓存文件
 func (sto Storage) Store(value interface{}) error {
-    return write(sto.name, value)
+    return write(sto.name + ".json", value)
 }
 
 
