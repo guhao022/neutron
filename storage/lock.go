@@ -84,6 +84,77 @@ func NewLock(lckpath, lckname, needlckfile string) (*lockfile, error) {
     }, nil
 }
 
+func NewLckStor(lckpath string, stor Storage) (*lockfile, error) {
+
+    needlckfile := path.Join(stor.storpath, stor.name + ".json")
+    lckname := stor.name
+
+    // 检测锁文件是否存在
+    lckfile := path.Join(lckpath, lckname)
+
+    _, err := os.Stat(lckfile)
+
+    if os.IsExist(err) {
+
+        var lc lckcontent
+
+        if err = read(lckfile, &lc); err != nil {
+
+            return nil, nil
+        }
+
+        return &lockfile{
+
+            name: lckname,
+
+            path: lckpath,
+
+            needlckfi: needlckfile,
+
+            content: lc,
+
+        }, nil
+
+        //return &l, nil
+    }
+
+    // 读取需要锁定的文件内容
+
+    _, err = os.Stat(needlckfile)
+
+    if os.IsNotExist(err) {
+        panic("file is not exist")
+    }
+
+    bytes, err := ioutil.ReadFile(needlckfile)
+
+    if err != nil {
+        fmt.Printf("read file error: %s\n", err)
+        return nil, err
+    }
+
+    fileMd5, err := FileMd5(needlckfile)
+
+    if err != nil {
+        fmt.Printf("file md5 error: %s\n", err)
+        return nil, err
+    }
+
+    var lckcont = lckcontent{bytes,fileMd5}
+
+    return &lockfile{
+
+        name: lckname,
+
+        path: lckpath,
+
+        needlckfi: needlckfile,
+
+        content: lckcont,
+
+    }, nil
+}
+
 type lckcontent struct {
     filebytes   []byte
     md5         []byte
