@@ -84,10 +84,17 @@ func NewLock(lckpath, lckname, needlckfile string) (*lockfile, error) {
     }, nil
 }
 
-func NewLckStor(lckpath string, stor Storage) (*lockfile, error) {
+func NewLckStor(stor Storage, lockpath ...string) (*lockfile, error) {
 
     needlckfile := path.Join(stor.storpath, stor.name + ".json")
+
     lckname := stor.name
+
+    lckpath := stor.storpath
+
+    if len(lockpath) > 0 {
+        lckpath = lockpath[0]
+    }
 
     // 检测锁文件是否存在
     lckfile := path.Join(lckpath, lckname)
