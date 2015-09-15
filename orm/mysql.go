@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"neutron/conf"
 	"regexp"
 	"strconv"
 	"strings"
-	"neutron/conf"
 )
 
 type Model struct {

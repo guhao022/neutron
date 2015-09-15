@@ -1,20 +1,20 @@
 package neutron
 
 import (
-	"net/http"
 	"encoding/json"
-	"strings"
-	"strconv"
+	"net/http"
 	"path/filepath"
-    "time"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Context struct {
-	Response       http.ResponseWriter
-	Request        *http.Request
+	Response http.ResponseWriter
+	Request  *http.Request
 }
 
-func (ctx *Context) Debug(){
+func (ctx *Context) Debug() {
 	CLog("[INFO]  [ %s ] | < %s > | [ %s ] \n", ctx.Request.Method, ctx.Request.RequestURI, ctx.IP())
 }
 
@@ -187,28 +187,28 @@ func (ctx *Context) GetFloat(key string, def ...float64) (float64, error) {
 //=============================INTPUT--END=========================
 
 func (ctx *Context) Cookie(key string, value ...string) string {
-    if len(value) < 1 {
-        c, e := ctx.Request.Cookie(key)
-        if e != nil {
-            return ""
-        }
-        return c.Value
-    }
-    if len(value) == 2 {
-        t := time.Now()
-        expire, _ := strconv.Atoi(value[1])
-        t = t.Add(time.Duration(expire) * time.Second)
-        cookie := &http.Cookie{
-            Name:    key,
-            Value:   value[0],
-            Path:    "/",
-            MaxAge:  expire,
-            Expires: t,
-        }
-        http.SetCookie(ctx.Response, cookie)
-        return ""
-    }
-    return ""
+	if len(value) < 1 {
+		c, e := ctx.Request.Cookie(key)
+		if e != nil {
+			return ""
+		}
+		return c.Value
+	}
+	if len(value) == 2 {
+		t := time.Now()
+		expire, _ := strconv.Atoi(value[1])
+		t = t.Add(time.Duration(expire) * time.Second)
+		cookie := &http.Cookie{
+			Name:    key,
+			Value:   value[0],
+			Path:    "/",
+			MaxAge:  expire,
+			Expires: t,
+		}
+		http.SetCookie(ctx.Response, cookie)
+		return ""
+	}
+	return ""
 }
 
 //============================OUTPUT--START============================
@@ -256,4 +256,5 @@ func (ctx *Context) Download(file string, filename ...string) {
 	ctx.SetHeader("Pragma", "public")
 	http.ServeFile(ctx.Response, ctx.Request, file)
 }
+
 //============================OUTPUT--STOP============================

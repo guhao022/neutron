@@ -21,9 +21,9 @@ func (r *Router) Run(addr string) error {
 
 func (r *Router) AddFunc(path string, method string, f func(*Context)) {
 	r.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-			context := Context{w, r}
-			f(&context)
-		}).Methods(method)
+		context := Context{w, r}
+		f(&context)
+	}).Methods(method)
 }
 
 func (r *Router) Get(path string, f func(*Context)) {
@@ -33,4 +33,3 @@ func (r *Router) Get(path string, f func(*Context)) {
 func (r *Router) Post(path string, f func(*Context)) {
 	r.AddFunc(path, "POST", f)
 }
-
