@@ -6,6 +6,7 @@ import (
     "encoding/json"
     "bufio"
     "path"
+    //"log"
 )
 
 func New(storpath, filename string) (*Storage, error) {

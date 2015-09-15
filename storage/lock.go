@@ -4,10 +4,11 @@ import (
     "path"
     "io/ioutil"
     "log"
-    "errors"
     "io"
     "crypto/md5"
     "fmt"
+    "path/filepath"
+    "errors"
 )
 
 type Lock interface {
@@ -29,18 +30,18 @@ func NewLock(lckpath, lckname, needlckfile string) (*lockfile, error) {
 
         if err = read(lckfile, &lc); err != nil {
 
-            return nil, nil
+            return nil, err
         }
 
         return &lockfile{
 
-            name: lckname,
+            Name: lckname,
 
-            path: lckpath,
+            Path: lckpath,
 
-            needlckfi: needlckfile,
+            Needlckfi: needlckfile,
 
-            content: lc,
+            Content: lc,
 
         }, nil
 
@@ -69,22 +70,29 @@ func NewLock(lckpath, lckname, needlckfile string) (*lockfile, error) {
         return nil, err
     }
 
-    var lckcont = lckcontent{bytes,fileMd5}
+    var lckcont lckcontent
+
+    lckcont.Filecontent = string(bytes)
+
+    lckcont.Md5 = fileMd5
 
     return &lockfile{
 
-        name: lckname,
+        Name: lckname,
 
-        path: lckpath,
+        Path: lckpath,
 
-        needlckfi: needlckfile,
+        Needlckfi: needlckfile,
 
-        content: lckcont,
+        Content: lckcont,
 
     }, nil
 }
 
-func NewLckStor(stor Storage, lockpath ...string) (*lockfile, error) {
+
+
+
+func NewLckStor(stor *Storage, lockpath ...string) (*lockfile, error) {
 
     needlckfile := path.Join(stor.storpath, stor.name + ".json")
 
@@ -107,18 +115,18 @@ func NewLckStor(stor Storage, lockpath ...string) (*lockfile, error) {
 
         if err = read(lckfile, &lc); err != nil {
 
-            return nil, nil
+            return nil, err
         }
 
         return &lockfile{
 
-            name: lckname,
+            Name: lckname,
 
-            path: lckpath,
+            Path: lckpath,
 
-            needlckfi: needlckfile,
+            Needlckfi: needlckfile,
 
-            content: lc,
+            Content: lc,
 
         }, nil
 
@@ -147,31 +155,38 @@ func NewLckStor(stor Storage, lockpath ...string) (*lockfile, error) {
         return nil, err
     }
 
-    var lckcont = lckcontent{bytes,fileMd5}
+    var lckcont lckcontent
+
+    lckcont.Filecontent = string(bytes)
+
+    lckcont.Md5 = fileMd5
+
+    log.Println(lckcont)
 
     return &lockfile{
 
-        name: lckname,
+        Name: lckname,
 
-        path: lckpath,
+        Path: lckpath,
 
-        needlckfi: needlckfile,
+        Needlckfi: needlckfile,
 
-        content: lckcont,
+        Content: lckcont,
 
     }, nil
 }
 
-type lckcontent struct {
-    filebytes   []byte
-    md5         []byte
+type lockfile struct {
+    Name        string
+    Path        string
+    Needlckfi   string
+    Content     lckcontent
 }
 
-type lockfile struct {
-    name        string
-    path        string
-    needlckfi   string
-    content     lckcontent
+
+type lckcontent struct {
+    Filecontent string  `json:"content"`
+    Md5         string  `json:"md5"`
 }
 
 func (l *lockfile) Lock() error {
@@ -192,7 +207,8 @@ func (l *lockfile) Lock() error {
         l.Unlock()
     }
 
-    var lckc lckcontent
+    lckc := l.Content
+
     err := write(l.lckfile(), lckc)
 
     return err
@@ -204,9 +220,15 @@ func (l *lockfile) Unlock() error {
 
 func (l *lockfile) Locked() bool {
 
-    _, err := os.Stat(l.lckfile())
+    name := l.lckfile()
 
-    return os.IsExist(err)
+    if _, err := os.Stat(name); err != nil {
+        if os.IsNotExist(err) {
+            return false
+        }
+    }
+
+    return true
 }
 
 func (l *lockfile) Recovery() error {
@@ -220,11 +242,11 @@ func (l *lockfile) Recovery() error {
 
     if !same {
         // 获取文件内容
-        var lc lckcontent
-        content := lc.filebytes
+        lc := l.Content
+        content := lc.Filecontent
 
         // 把内容写入文件
-        err = ioutil.WriteFile(l.needlckfi, content, os.ModePerm)
+        err = ioutil.WriteFile(l.Needlckfi, []byte(content), os.ModePerm)
 
         return err
     }
@@ -234,15 +256,16 @@ func (l *lockfile) Recovery() error {
 
 // 获取 lock 文件路径
 func (l *lockfile) lckfile() string {
-    lckfile := path.Join(l.path, l.name + ".lck")
-    return lckfile
+    lckfile := path.Join(l.Path, l.Name + ".lck")
+    lckpath, _ := filepath.Abs(lckfile)
+    return lckpath
 }
 
 // 检测文件 MD5
 func (l *lockfile) checkMd5() (bool, error) {
     // 读取 lck 文件
 
-    var lc lckcontent
+    lc := l.Content
     err := read(l.lckfile(), &lc)
 
     if err != nil {
@@ -251,13 +274,13 @@ func (l *lockfile) checkMd5() (bool, error) {
     }
 
     //然后计算需要加锁文件 MD5
-    filemd5, err := FileMd5(l.needlckfi)
+    filemd5, err := FileMd5(l.Needlckfi)
 
     if err != nil {
         return false, err
     }
 
-    if string(lc.md5) != string(filemd5) {
+    if lc.Md5 != filemd5 {
         return false, nil
     }
 
@@ -265,13 +288,13 @@ func (l *lockfile) checkMd5() (bool, error) {
 }
 
 // 获取文件 Md5 值
-func FileMd5(fi string) ([]byte, error) {
+func FileMd5(fi string) (string, error) {
     file, err := os.Open(fi)
     if err != nil {
         log.Printf("open file error : %s\n", err)
-        return nil, err
+        return "", err
     }
     md5f := md5.New()
     io.Copy(md5f, file)
-    return md5f.Sum(nil), nil
+    return fmt.Sprintf("%x", md5f.Sum(nil)), nil
 }
