@@ -16,7 +16,7 @@ func New(storpath, filename string) (*Storage, error) {
 
 		if os.IsNotExist(err) {
 
-			err = os.Mkdir(storpath, os.ModePerm)
+			err = os.MkdirAll(storpath, os.ModePerm)
 
 			if err != nil {
 				return nil, err
@@ -35,15 +35,21 @@ type Storage struct {
 }
 
 // 获取文件信息
-func (sto Storage) Get(value interface{}) error {
+func (sto *Storage) Get(value interface{}) error {
 	var filepath = path.Join(sto.storpath, sto.name)
 	return read(filepath+".json", value)
 }
 
 // 缓存文件
-func (sto Storage) Store(value interface{}) error {
+func (sto *Storage) Store(value interface{}) error {
 	var filepath = path.Join(sto.storpath, sto.name)
 	return write(filepath+".json", value)
+}
+
+// 删除文件
+func (sto *Storage) Del() error {
+    var filepath = path.Join(sto.storpath, sto.name)
+    return os.Remove(filepath)
 }
 
 func getFile(storpath string) (*os.File, error) {
