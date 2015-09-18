@@ -37,7 +37,7 @@ type Storage struct {
 // 获取文件信息
 func (sto *Storage) Get(value interface{}) error {
 	var filepath = path.Join(sto.storpath, sto.name)
-	return read(filepath+".json", value)
+	return read(filepath, value)
 }
 
 // 缓存文件
@@ -64,7 +64,7 @@ func getFile(storpath string) (*os.File, error) {
 }
 
 func read(storpath string, value interface{}) error {
-	f, err := getFile(storpath)
+    f, err := os.OpenFile(storpath, os.O_RDWR, 0666)
 	defer f.Close()
 
 	if err != nil {
