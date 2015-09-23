@@ -52,6 +52,10 @@ func (sto *Storage) Del() error {
     return os.Remove(filepath)
 }
 
+func Del(path string) error {
+    return os.RemoveAll(path)
+}
+
 func getFile(storpath string) (*os.File, error) {
 	f, err := os.OpenFile(storpath, os.O_RDWR, 0666)
 	if err != nil {
