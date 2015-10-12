@@ -25,13 +25,31 @@ type Model struct {
 
 func SetConfig(filename string) (*Model, error) {
 	c := new(Model)
-	con := conf.SetConfig(filename)
-	charset := con.GetValue("database", "charset")
-	username := con.GetValue("database", "username")
-	password := con.GetValue("database", "password")
-	hostname := con.GetValue("database", "host")
-	database := con.GetValue("database", "database")
-	port := con.GetValue("database", "port")
+    dict, err := conf.Load(filename)
+    if err != nil {
+        panic(err)
+    }
+	charset, _ := dict.GetString("database", "charset")
+	username, found := dict.GetString("database", "username")
+    if !found {
+        panic("database username not set")
+    }
+	password, found := dict.GetString("database", "password")
+    if !found {
+        panic("database password not set")
+    }
+	hostname, found := dict.GetString("database", "host")
+    if !found {
+        panic("database host not set")
+    }
+	database, found := dict.GetString("database", "database")
+    if !found {
+        panic("database name not set")
+    }
+	port, found := dict.GetString("database", "port")
+    if !found {
+        port = "3306"
+    }
 	db, err := sql.Open("mysql", username+":"+password+"@tcp("+hostname+":"+port+")/"+database+"?charset="+charset)
 	err = db.Ping()
 	if err != nil {
@@ -318,7 +336,6 @@ func (m *Model) FullJoin(table, condition string) *Model {
 	return m
 }
 
-//the function will use friendly way to print the data
 func Print(slice map[int]map[string]string) {
 	for _, v := range slice {
 		for key, value := range v {
