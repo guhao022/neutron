@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/guhao022/neutron/log"
 )
 
 type Context struct {
@@ -15,7 +16,7 @@ type Context struct {
 }
 
 func (ctx *Context) Debug() {
-	CLog("[INFO]  [ %s ] | < %s > | [ %s ] \n", ctx.Request.Method, ctx.Request.RequestURI, ctx.IP())
+	log.CLog("[INFO]  [ %s ] | < %s > | [ %s ] \n", ctx.Request.Method, ctx.Request.RequestURI, ctx.IP())
 }
 
 //==========================INTPUT--START=========================
